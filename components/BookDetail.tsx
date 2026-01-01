@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Book, BookStatus } from '../types';
 
 interface BookDetailProps {
@@ -8,6 +8,16 @@ interface BookDetailProps {
 }
 
 const BookDetail: React.FC<BookDetailProps> = ({ book, onClose }) => {
+  // Blocca lo scroll del body quando il componente è montato
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   const getStatusStyle = (status: BookStatus) => {
     switch (status) {
       case BookStatus.READING: return 'bg-blue-600 text-white';

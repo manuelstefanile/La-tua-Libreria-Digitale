@@ -20,6 +20,15 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
   const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Blocca lo scroll del body
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   useEffect(() => {
     if (editBook) {
       setTitle(editBook.title);
@@ -125,12 +134,6 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
               
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
             </div>
-            
-            <div className="mt-12 text-center relative z-10 hidden md:block">
-              <p className="text-white/40 text-[11px] font-medium leading-relaxed italic">
-                "Ogni libro ha bisogno di un volto che sappia <br/> raccontare la sua anima."
-              </p>
-            </div>
           </div>
 
           {/* SEZIONE DESTRA: Editor Metadati */}
@@ -192,48 +195,25 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_auto] animate-gradient group-hover/ai:scale-110 transition-transform duration-500"></div>
                     <span className="relative z-10 flex items-center gap-2 text-[9px] font-black text-white uppercase tracking-tighter">
-                      {isGenerating ? (
-                        <svg className="animate-spin h-3 w-3 text-white" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M11.3 1.047a.75.75 0 01.488.608l1.049 6.295 6.295 1.049a.75.75 0 010 1.464l-6.295 1.049-1.049 6.295a.75.75 0 01-1.464 0l-1.049-6.295-6.295-1.049a.75.75 0 010-1.464l6.295-1.049 1.049-6.295a.75.75 0 01.608-.488z" clipRule="evenodd" /></svg>
-                      )}
-                      {isGenerating ? 'Gemini sta scrivendo...' : 'Scrivi con l\'IA'}
+                      {isGenerating ? "..." : "Scrivi con l'IA"}
                     </span>
                   </button>
                 </div>
                 <textarea 
                   value={description} onChange={(e) => setDescription(e.target.value)} rows={5}
                   className="w-full px-6 py-5 rounded-[2rem] bg-slate-50 border-2 border-transparent focus:border-indigo-100 focus:bg-white outline-none transition-all text-sm leading-relaxed text-slate-600 font-medium placeholder:text-slate-300"
-                  placeholder="Di cosa parla questo libro? Lascia che la tua creatività fluisca o chiedi aiuto a Gemini..."
                 />
               </div>
 
               <div className="pt-6">
-                <button 
-                  type="submit"
-                  className="w-full relative overflow-hidden group bg-slate-900 text-white py-5 rounded-[1.8rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-slate-200 transition-all duration-500 hover:shadow-indigo-200 hover:bg-indigo-600 active:scale-95"
-                >
-                  <span className="relative z-10">{editBook ? 'Aggiorna Edizione' : 'Pubblica in Libreria'}</span>
+                <button type="submit" className="w-full bg-slate-900 text-white py-5 rounded-[1.8rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl transition-all duration-500 hover:bg-indigo-600">
+                  {editBook ? 'Aggiorna Edizione' : 'Pubblica in Libreria'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       </div>
-      
-      <style>{`
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-gradient {
-          animation: gradient 3s linear infinite;
-        }
-      `}</style>
     </div>
   );
 };
