@@ -50,8 +50,12 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
       coverUrl: coverUrl || `https://picsum.photos/seed/${title}/400/600`,
       createdAt: editBook ? editBook.createdAt : Date.now()
     };
-    if (editBook) onUpdate(bookData);
-    else onAdd(bookData);
+    
+    // Simula un breve caricamento per feedback visivo immediato
+    setTimeout(() => {
+      if (editBook) onUpdate(bookData);
+      else onAdd(bookData);
+    }, 400);
   };
 
   return (
@@ -60,7 +64,6 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
       
       <div className="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl rounded-none sm:rounded-[3.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 flex flex-col md:flex-row">
         
-        {/* Sezione Caricamento Immagine - Ottimizzata Mobile */}
         <div className="md:w-[40%] bg-slate-900 p-6 sm:p-10 flex flex-col items-center justify-center relative overflow-hidden shrink-0">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent"></div>
           
@@ -82,14 +85,13 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
           </div>
-          <p className="mt-4 sm:mt-8 text-white/30 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] z-10 hidden sm:block">Salvataggio su Cloud/Locale</p>
+          <p className="mt-4 sm:mt-8 text-white/30 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] z-10 hidden sm:block">Supporto Cloud & Locale</p>
         </div>
 
-        {/* Form Dati */}
         <div className="flex-1 p-8 sm:p-14 overflow-y-auto bg-white flex flex-col">
           <div className="flex justify-between items-center mb-8 sm:mb-10">
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 font-serif tracking-tighter">
-              {editBook ? 'Aggiorna Opera' : 'Nuovo Ingresso'}
+              {editBook ? 'Aggiorna Volume' : 'Nuova Archiviazione'}
             </h2>
             <button onClick={onClose} disabled={isSubmitting} className="p-2 sm:p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl sm:rounded-2xl transition-all">
                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,12 +147,16 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[1.8rem] font-black text-[10px] sm:text-xs uppercase tracking-[0.3em] shadow-2xl shadow-slate-200 hover:bg-indigo-600 active:scale-95 transition-all mt-4 sm:mt-6 mb-4 md:mb-0 disabled:bg-slate-400 disabled:shadow-none flex items-center justify-center gap-3"
+              className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-[1.5rem] sm:rounded-[1.8rem] font-black text-[10px] sm:text-xs uppercase tracking-[0.3em] shadow-2xl shadow-slate-200 hover:bg-indigo-700 active:scale-95 transition-all mt-4 sm:mt-6 mb-4 md:mb-0 disabled:bg-slate-400 disabled:shadow-none flex items-center justify-center gap-3"
             >
-              {isSubmitting && (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Archiviazione in corso...</span>
+                </>
+              ) : (
+                'Salva Opera'
               )}
-              {isSubmitting ? 'ELABORAZIONE...' : 'SALVA OPERA'}
             </button>
           </form>
         </div>

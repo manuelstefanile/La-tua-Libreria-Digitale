@@ -99,6 +99,29 @@ export const storageService = {
     return userWithoutPass;
   },
 
+  updateUserProfile: async (userId: string, updates: Partial<User>): Promise<User | null> => {
+    if (isServerAvailable && userId !== 'admin-virtual-session') {
+      // In un'applicazione reale qui faremmo una chiamata PATCH/PUT /api/users/:id
+      // Per questa demo aggiorniamo solo il lato locale se il server non ha l'endpoint specifico
+    }
+
+    const users = getLocalUsers();
+    const index = users.findIndex(u => u.id === userId);
+    if (index !== -1) {
+      users[index] = { ...users[index], ...updates };
+      localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+      const { password: _, ...userWithoutPass } = users[index];
+      return userWithoutPass;
+    }
+    
+    // Se è l'admin virtuale
+    if (userId === 'admin-virtual-session') {
+        return { id: 'admin-virtual-session', username: updates.username || 'Super Admin', email: 'admin@admin' };
+    }
+
+    return null;
+  },
+
   // Operazioni sui Libri
   getBooks: async (): Promise<Book[]> => {
     if (isServerAvailable) {
