@@ -15,9 +15,10 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(cors());
+// Aumentiamo il limite per gestire le stringhe Base64 delle immagini
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Configurazione Database - Supporta sia Cloud SQL che connessioni standard
 const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
   user: process.env.DB_USER,
@@ -28,7 +29,6 @@ const dbConfig = {
   queueLimit: 0
 };
 
-// Se è presente INSTANCE_CONNECTION_NAME, usiamo il socket di Cloud SQL
 if (process.env.INSTANCE_CONNECTION_NAME) {
   dbConfig.socketPath = `/cloudsql/${process.env.INSTANCE_CONNECTION_NAME}`;
   delete dbConfig.host;
@@ -36,11 +36,10 @@ if (process.env.INSTANCE_CONNECTION_NAME) {
 
 const pool = mysql.createPool(dbConfig);
 
-// Inizializzazione Database: Creazione tabelle se non esistono
 const initDb = async () => {
   try {
     const connection = await pool.getConnection();
-    console.log('📦 Inizializzazione tabelle database...');
+    console.log('📦 Configurazione database in corso...');
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -51,6 +50,8 @@ const initDb = async () => {
       )
     `);
 
+    // Nota: coverUrl è LONGTEXT per supportare Base64 pesanti.
+    // Rimosso FOREIGN KEY per permettere all'admin virtuale di salvare libri.
     await connection.query(`
       CREATE TABLE IF NOT EXISTS books (
         id VARCHAR(50) PRIMARY KEY,
@@ -59,40 +60,39 @@ const initDb = async () => {
         description TEXT,
         status VARCHAR(50),
         userId VARCHAR(50),
-        coverUrl TEXT,
-        createdAt BIGINT,
-        FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+        coverUrl LONGTEXT,
+        createdAt BIGINT
       )
     `);
 
     connection.release();
-    console.log('✅ Tabelle verificate/create correttamente.');
+    console.log('✅ Database pronto (Supporto immagini grandi e Admin virtuale attivo).');
   } catch (err) {
-    console.error('❌ Errore critico inizializzazione DB:', err.message);
+    console.error('❌ Errore inizializzazione DB:', err.message);
   }
 };
 
 initDb();
 
-// Middleware di logging
 app.use('/api', (req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
-// --- API: HEALTH CHECK ---
 app.get('/api/health', async (req, res) => {
   try {
-    const [result] = await pool.query('SELECT 1');
-    res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', database: 'connected' });
   } catch (err) {
-    res.status(500).json({ status: 'error', database: 'disconnected', error: err.message });
+    res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
 
-// --- API: AUTH ---
 app.post('/api/auth/register', async (req, res) => {
   const { id, username, email, password } = req.body;
+  if (email.toLowerCase() === 'admin@admin') {
+    return res.status(400).json({ error: 'Email riservata.' });
+  }
   try {
     await pool.query(
       'INSERT INTO users (id, username, email, password) VALUES (?, ?, ?, ?)',
@@ -100,13 +100,22 @@ app.post('/api/auth/register', async (req, res) => {
     );
     res.status(201).json({ id, username, email });
   } catch (err) {
-    console.error('Registration error:', err);
-    res.status(400).json({ error: 'Email già esistente o dati non validi.' });
+    res.status(400).json({ error: 'Errore registrazione.' });
   }
 });
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
+
+  // LOGIN ADMIN VIRTUALE (Nessun passaggio sul DB)
+  if (email === 'admin@admin' && password === 'admin') {
+    return res.json({
+      id: 'admin-virtual-session',
+      username: 'Super Admin',
+      email: 'admin@admin'
+    });
+  }
+
   try {
     const [rows] = await pool.query(
       'SELECT id, username, email FROM users WHERE email = ? AND password = ?',
@@ -118,11 +127,10 @@ app.post('/api/auth/login', async (req, res) => {
       res.status(401).json({ error: 'Credenziali non valide.' });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Errore server.' });
   }
 });
 
-// --- API: BOOKS CRUD ---
 app.get('/api/books', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM books ORDER BY createdAt DESC');
@@ -169,22 +177,15 @@ app.delete('/api/books/:id', async (req, res) => {
   }
 });
 
-// --- SERVING FRONTEND ---
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
-    if (err) {
-      res.status(200).send('<h1>Server BiblioTech Online</h1><p>API pronte e DB inizializzato.</p>');
-    }
+    if (err) res.status(200).send('Server BiblioTech Attivo');
   });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('=========================================');
-  console.log(`🚀 BIBLIOTECH SERVER OPERATIVO`);
-  console.log(`📍 Porta: ${PORT}`);
-  console.log(`🔗 Health: http://localhost:${PORT}/api/health`);
-  console.log('=========================================');
+  console.log('🚀 Server pronto');
 });

@@ -16,13 +16,26 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
   const [description, setDescription] = useState(editBook?.description || '');
   const [status, setStatus] = useState<BookStatus>(editBook?.status || BookStatus.READING);
   const [coverUrl, setCoverUrl] = useState(editBook?.coverUrl || '');
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("L'immagine è troppo grande. Massimo 5MB.");
+        return;
+      }
+      setIsUploading(true);
       const reader = new FileReader();
-      reader.onloadend = () => setCoverUrl(reader.result as string);
+      reader.onloadend = () => {
+        setCoverUrl(reader.result as string);
+        setIsUploading(false);
+      };
+      reader.onerror = () => {
+        alert("Errore nel caricamento dell'immagine.");
+        setIsUploading(false);
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -45,13 +58,12 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
       
       <div className="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl rounded-none sm:rounded-[3.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 duration-500 flex flex-col md:flex-row">
         
-        {/* Sidebar Preview */}
         <div className="md:w-[40%] bg-slate-900 p-10 flex flex-col items-center justify-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent"></div>
           
           <div 
-            onClick={() => fileInputRef.current?.click()}
-            className="relative aspect-[3/4] w-full max-w-[240px] bg-white/5 rounded-[2.5rem] border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500/50 transition-all z-10"
+            onClick={() => !isUploading && fileInputRef.current?.click()}
+            className={`relative aspect-[3/4] w-full max-w-[240px] bg-white/5 rounded-[2.5rem] border-2 border-dashed ${isUploading ? 'border-indigo-500 animate-pulse' : 'border-white/20'} flex items-center justify-center cursor-pointer overflow-hidden group hover:border-indigo-500/50 transition-all z-10`}
           >
             {coverUrl ? (
               <img src={coverUrl} alt="Preview" className="w-full h-full object-cover" />
@@ -60,15 +72,16 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white/20 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Carica Copertina</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {isUploading ? 'Elaborazione...' : 'Carica Copertina'}
+                </span>
               </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
           </div>
-          <p className="mt-8 text-white/30 text-[9px] font-black uppercase tracking-[0.3em] z-10">Anteprima Libro</p>
+          <p className="mt-8 text-white/30 text-[9px] font-black uppercase tracking-[0.3em] z-10">L'immagine sarà salvata nel DB</p>
         </div>
 
-        {/* Form Content */}
         <div className="flex-1 p-10 sm:p-14 overflow-y-auto bg-white flex flex-col">
           <div className="flex justify-between items-center mb-10">
             <h2 className="text-4xl font-black text-slate-900 font-serif tracking-tighter">
