@@ -13,88 +13,68 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Database in memoria temporaneo (si resetta al riavvio del server)
-let mockBooks = [];
-let mockUsers = [];
+// Database in memoria (si azzera ad ogni riavvio del container)
+let books = [];
 
-console.log('--- MODALITÀ TEST ATTIVA: NESSUNA CONNESSIONE DB ---');
+// Middleware di logging globale per le API
+app.use('/api', (req, res, next) => {
+  console.log(`[API CALL] ${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
-// --- ENDPOINT API CON LOGGING ---
+// --- ENDPOINT API ---
 
 app.get('/api/health', (req, res) => {
-  console.log('[LOG] Health Check ricevuto alle:', new Date().toLocaleTimeString());
-  res.json({ 
-    status: 'ok', 
-    server: 'attivo',
-    database: 'non richiesto (in-memory)',
-    timestamp: new Date().toISOString()
-  });
+  console.log('-> Rispondo a Health Check: Server Vivo');
+  res.json({ status: 'ok', message: 'Benvenuto nelle API di BiblioTech!' });
 });
 
 app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  console.log(`[LOG] Tentativo di login per: ${email}`);
-  
-  // Mock login: accetta qualsiasi password lunga almeno 3 caratteri
-  if (email && password && password.length >= 3) {
-    const user = { id: 'u1', username: email.split('@')[0], email };
-    res.json(user);
-  } else {
-    res.status(401).json({ error: 'Dati non validi per il test.' });
-  }
+  console.log(`-> Login ricevuto per: ${req.body.email}`);
+  res.json({ id: 'user-123', username: 'Ospite', email: req.body.email });
 });
 
 app.post('/api/auth/register', (req, res) => {
-  const { id, username, email } = req.body;
-  console.log(`[LOG] Nuovo utente registrato: ${username} (${email})`);
-  res.json({ id, username, email });
+  console.log(`-> Registrazione per: ${req.body.email}`);
+  res.json({ id: 'user-123', username: 'Ospite', email: req.body.email });
 });
 
 app.get('/api/books', (req, res) => {
-  console.log(`[LOG] Richiesta elenco libri. Totale in memoria: ${mockBooks.length}`);
-  res.json(mockBooks);
+  console.log(`-> Restituisco ${books.length} libri`);
+  res.json(books);
 });
 
 app.post('/api/books', (req, res) => {
-  const book = req.body;
-  console.log(`[LOG] Aggiunta libro: "${book.title}" di ${book.author}`);
-  mockBooks.push(book);
-  res.json({ success: true, id: book.id });
-});
-
-app.put('/api/books/:id', (req, res) => {
-  const { id } = req.params;
-  const updatedData = req.body;
-  console.log(`[LOG] Aggiornamento libro ID: ${id}`);
-  mockBooks = mockBooks.map(b => b.id === id ? { ...b, ...updatedData } : b);
-  res.json({ success: true });
+  console.log(`-> Aggiunta nuovo libro: ${req.body.title}`);
+  const newBook = { ...req.body, createdAt: Date.now() };
+  books.push(newBook);
+  res.status(201).json({ success: true, book: newBook });
 });
 
 app.delete('/api/books/:id', (req, res) => {
-  const { id } = req.params;
-  console.log(`[LOG] Eliminazione libro ID: ${id}`);
-  mockBooks = mockBooks.filter(b => b.id !== id);
+  console.log(`-> Eliminazione libro ID: ${req.params.id}`);
+  books = books.filter(b => b.id !== req.params.id);
   res.json({ success: true });
 });
 
-// --- GESTIONE FILE STATICI ---
+// --- SERVING FRONTEND (Dalla cartella /dist generata da Vite) ---
 
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
+// Qualsiasi altra rotta serve l'index.html (SPA)
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    console.log(`[LOG] 404 - Endpoint API non trovato: ${req.path}`);
-    return res.status(404).json({ error: 'Endpoint non esistente' });
-  }
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
     if (err) {
-      res.status(200).send('Backend BiblioTech Pronto. API disponibili su /api');
+      res.status(200).send('<h1>Server BiblioTech Attivo</h1><p>Le API sono pronte su /api. Esegui "npm run build" per caricare il frontend qui.</p>');
     }
   });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server di TEST in ascolto su porta ${PORT}`);
-  console.log(`📍 Prova: curl http://localhost:${PORT}/api/health`);
+  console.log('=========================================');
+  console.log(`🚀 BIBLIOTECH SERVER ONLINE`);
+  console.log(`📍 Porta: ${PORT}`);
+  console.log(`🔗 API: http://localhost:${PORT}/api/health`);
+  console.log('=========================================');
 });
