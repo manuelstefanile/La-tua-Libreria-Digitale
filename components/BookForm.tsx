@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { BookStatus, Book } from '../types';
-import { geminiService } from '../services/geminiService';
 
 interface BookFormProps {
   userId: string;
@@ -17,7 +16,6 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<BookStatus>(BookStatus.READING);
   const [coverUrl, setCoverUrl] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -37,17 +35,6 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
       setCoverUrl(editBook.coverUrl);
     }
   }, [editBook]);
-
-  const handleGenerateDescription = async () => {
-    if (!title || !author) {
-      alert("Inserisci titolo e autore.");
-      return;
-    }
-    setIsGenerating(true);
-    const desc = await geminiService.generateDescription(title, author);
-    setDescription(desc);
-    setIsGenerating(false);
-  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,7 +68,7 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
     <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-xl flex items-end sm:items-center justify-center p-0 sm:p-6">
       <div className="bg-white w-full h-[95vh] sm:h-auto sm:max-h-[90vh] sm:max-w-5xl rounded-t-[2.5rem] sm:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in slide-in-from-bottom-full duration-500">
         
-        {/* Preview Immagine (Altezza limitata su mobile) */}
+        {/* Preview Immagine */}
         <div className="h-[25vh] md:h-auto md:w-[35%] bg-slate-900 relative p-6 flex flex-col items-center justify-center flex-shrink-0">
           <div 
             onClick={() => fileInputRef.current?.click()}
@@ -130,19 +117,11 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase">Sinossi</label>
-                <button 
-                  type="button" onClick={handleGenerateDescription} disabled={isGenerating}
-                  className="text-indigo-600 text-[10px] font-black uppercase hover:underline"
-                >
-                  {isGenerating ? 'Generazione...' : 'Usa Gemini AI'}
-                </button>
-              </div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase mb-2">Sinossi</label>
               <textarea 
                 value={description} onChange={(e) => setDescription(e.target.value)} rows={4}
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                placeholder="Descrizione breve..."
+                placeholder="Scrivi una breve descrizione del libro..."
               />
             </div>
 
