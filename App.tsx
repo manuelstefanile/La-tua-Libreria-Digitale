@@ -6,6 +6,7 @@ import BookCard from './components/BookCard';
 import BookForm from './components/BookForm';
 import BookDetail from './components/BookDetail';
 import Profile from './components/Profile';
+import ConfirmModal from './components/ConfirmModal';
 import { storageService } from './services/storageService';
 
 type SortField = 'title' | 'author' | 'createdAt';
@@ -59,6 +60,7 @@ const App: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,16 +91,17 @@ const App: React.FC = () => {
     setIsLoading(false);
   };
 
-  const deleteBook = async (id: string) => {
-    if (confirm("Sei sicuro di voler rimuovere questo libro dall'archivio?")) {
-      setIsActionLoading("Rimozione Opera...");
-      const success = await storageService.deleteBook(id);
-      if (success) {
-        setBooks(prev => prev.filter(b => b.id !== id));
-        if (selectedBook?.id === id) setSelectedBook(null);
-      }
-      setIsActionLoading(null);
+  const handleDeleteConfirm = async () => {
+    if (!bookToDelete) return;
+    const id = bookToDelete.id;
+    setBookToDelete(null);
+    setIsActionLoading("Rimozione Opera...");
+    const success = await storageService.deleteBook(id);
+    if (success) {
+      setBooks(prev => prev.filter(b => b.id !== id));
+      if (selectedBook?.id === id) setSelectedBook(null);
     }
+    setIsActionLoading(null);
   };
 
   const processedBooks = useMemo(() => {
@@ -272,7 +275,7 @@ const App: React.FC = () => {
                   <div key={book.id} className="animate-in fade-in slide-in-from-bottom-10 duration-700" style={{ animationDelay: `${idx * 80}ms` }}>
                     <BookCard 
                       book={book} 
-                      onDelete={deleteBook} 
+                      onDelete={() => setBookToDelete(book)} 
                       onEdit={setEditingBook} 
                       onSelect={setSelectedBook} 
                       showActions={book.userId === user.id} 
@@ -324,6 +327,15 @@ const App: React.FC = () => {
       )}
 
       {selectedBook && <BookDetail book={selectedBook} onClose={() => setSelectedBook(null)} />}
+
+      <ConfirmModal 
+        isOpen={!!bookToDelete}
+        title="Rimuovere l'Opera?"
+        message={`Sei sicuro di voler eliminare definitivamente "${bookToDelete?.title}" dal tuo archivio? Questa azione non può essere annullata.`}
+        confirmLabel="Elimina Definitivamente"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setBookToDelete(null)}
+      />
 
       <style>{`
         @keyframes shimmer {
