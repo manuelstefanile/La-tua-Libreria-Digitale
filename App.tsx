@@ -90,7 +90,7 @@ const App: React.FC = () => {
   };
 
   const deleteBook = async (id: string) => {
-    if (confirm("Sei sicuro di voler rimuovere questo volume dall'archivio?")) {
+    if (confirm("Sei sicuro di voler rimuovere questo libro dall'archivio?")) {
       setIsActionLoading("Rimozione Opera...");
       const success = await storageService.deleteBook(id);
       if (success) {
@@ -137,7 +137,7 @@ const App: React.FC = () => {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-black font-serif tracking-tighter text-slate-900">BiblioTech</h1>
+              <h1 className="text-2xl font-black font-serif tracking-tighter text-slate-900">MyBiblio</h1>
               <div className="flex items-center gap-2">
                  <div className={`w-2 h-2 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></div>
                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
@@ -205,21 +205,16 @@ const App: React.FC = () => {
                   Il tuo <span className="text-indigo-700">Archivio</span> Personale
                 </h2>
                 <p className="text-slate-500 font-medium text-xl leading-relaxed max-w-xl">
-                  Ogni volume aggiunto è una nuova prospettiva nel tuo universo letterario.
+                  Ogni libro aggiunto è una nuova prospettiva nel tuo universo letterario.
                 </p>
               </div>
               
-              <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-                 <div className="flex bg-white p-1.5 rounded-[1.3rem] border border-slate-200 shadow-sm">
-                    <button onClick={() => setFilter('all')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'all' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Tutti</button>
-                    <button onClick={() => setFilter('mine')} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === 'mine' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>Miei</button>
-                 </div>
-                 
+              <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">                 
                  <button 
                     onClick={() => setShowAddForm(true)}
                     className="bg-indigo-700 text-white px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-100 hover:bg-slate-950 active:scale-95 transition-all"
                  >
-                   Nuovo Volume
+                   Nuovo Libro
                  </button>
               </div>
             </div>

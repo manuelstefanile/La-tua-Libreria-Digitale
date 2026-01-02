@@ -82,11 +82,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
               </svg>
             </div>
-            <span className="text-xl font-black font-serif tracking-tighter">BiblioTech</span>
+            <span className="text-xl font-black font-serif tracking-tighter">MyBiblio</span>
           </div>
 
           <div className="max-w-xl">
-            <p className="text-indigo-400 font-black text-[10px] uppercase tracking-[0.4em] mb-4 animate-in fade-in slide-in-from-bottom-2 duration-700">Curated Experience</p>
             <h1 className="text-5xl lg:text-8xl font-black font-serif leading-[0.9] tracking-tighter mb-6 animate-in fade-in slide-in-from-left-10 duration-1000">
               Il tuo <br /> <span className="text-white/40 italic">Rifugio</span> <br /> Digitale.
             </h1>
@@ -174,7 +173,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuthSuccess }) => {
           
           <div className="mt-8 text-center">
             <p className="text-slate-600 text-[9px] font-black uppercase tracking-widest">
-              © 2025 BiblioTech Design System
+              © 2025 
             </p>
           </div>
         </div>
