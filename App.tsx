@@ -89,8 +89,10 @@ const App: React.FC = () => {
             <div>
               <h1 className="text-2xl font-black font-serif tracking-tighter text-slate-900">BiblioTech</h1>
               <div className="flex items-center gap-2">
-                 <div className={`w-1.5 h-1.5 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Database Cloud</span>
+                 <div className={`w-1.5 h-1.5 rounded-full ${serverStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></div>
+                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">
+                   {serverStatus === 'online' ? 'Cloud Database' : 'Modalità Locale'}
+                 </span>
               </div>
             </div>
           </div>

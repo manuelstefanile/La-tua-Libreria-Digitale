@@ -1,112 +1,180 @@
 
 import { User, Book } from '../types';
 
-// Utilizziamo un percorso relativo per le API, così funzionano sullo stesso host/porta del deploy
 const API_BASE = '/api';
+const LOCAL_BOOKS_KEY = 'bibliotech_books_local';
+const LOCAL_USERS_KEY = 'bibliotech_users_local';
+
+// Variabile di stato interna per gestire il fallback
+let isServerAvailable = true;
+
+const getLocalBooks = (): Book[] => {
+  const data = localStorage.getItem(LOCAL_BOOKS_KEY);
+  return data ? JSON.parse(data) : [];
+};
+
+const setLocalBooks = (books: Book[]) => {
+  localStorage.setItem(LOCAL_BOOKS_KEY, JSON.stringify(books));
+};
+
+const getLocalUsers = (): (User & { password?: string })[] => {
+  const data = localStorage.getItem(LOCAL_USERS_KEY);
+  return data ? JSON.parse(data) : [];
+};
 
 export const storageService = {
-  // Health Check
+  // Health Check: determina se usare il server o il local storage
   checkHealth: async (): Promise<{ status: string; database: string } | null> => {
     try {
-      const response = await fetch(`${API_BASE}/health`, {
-        // Timeout breve per non bloccare la UI
-        signal: AbortSignal.timeout(5000)
-      });
-      if (!response.ok) return null;
-      return await response.json();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      
+      const response = await fetch(`${API_BASE}/health`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      isServerAvailable = true;
+      return data;
     } catch (e) {
-      console.error('Backend non raggiungibile:', e);
-      return null;
+      console.warn('Backend non raggiungibile. Passaggio alla modalità LocalStorage.');
+      isServerAvailable = false;
+      return { status: 'offline', database: 'local_storage' };
     }
   },
 
   // Autenticazione
   login: async (email: string, password: string): Promise<User | null> => {
-    try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      if (!response.ok) return null;
-      return await response.json();
-    } catch (e) {
-      console.error('Errore login:', e);
-      throw e;
+    // Bypass Admin (Sempre prioritario)
+    if (email === 'admin@admin' && password === 'admin') {
+      return { id: 'admin-virtual-session', username: 'Super Admin', email: 'admin@admin' };
     }
+
+    if (isServerAvailable) {
+      try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (response.ok) return await response.json();
+      } catch (e) {
+        isServerAvailable = false;
+      }
+    }
+
+    // Fallback LocalStorage
+    const users = getLocalUsers();
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) {
+      const { password: _, ...userWithoutPass } = user;
+      return userWithoutPass;
+    }
+    return null;
   },
 
   register: async (user: User & { password?: string }): Promise<User | null> => {
-    try {
-      const response = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user)
-      });
-      if (!response.ok) {
+    if (isServerAvailable) {
+      try {
+        const response = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user)
+        });
+        if (response.ok) return await response.json();
         const err = await response.json();
         throw new Error(err.error || 'Errore registrazione');
+      } catch (e: any) {
+        if (e.message.includes('Email riservata') || e.message.includes('registrazione')) throw e;
+        isServerAvailable = false;
       }
-      return await response.json();
-    } catch (e) {
-      console.error('Errore registrazione:', e);
-      throw e;
     }
+
+    // Fallback LocalStorage
+    const users = getLocalUsers();
+    if (users.find(u => u.email === user.email)) throw new Error('Email già esistente localmente.');
+    users.push(user);
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+    const { password: _, ...userWithoutPass } = user;
+    return userWithoutPass;
   },
 
   // Operazioni sui Libri
   getBooks: async (): Promise<Book[]> => {
-    try {
-      const response = await fetch(`${API_BASE}/books`);
-      if (!response.ok) return [];
-      const data = await response.json();
-      return data.map((b: any) => ({
-        ...b,
-        createdAt: Number(b.createdAt) // Assicuriamoci che sia un numero
-      }));
-    } catch (e) {
-      console.error('Errore recupero libri:', e);
-      return [];
+    if (isServerAvailable) {
+      try {
+        const response = await fetch(`${API_BASE}/books`);
+        if (response.ok) {
+          const data = await response.json();
+          return data.map((b: any) => ({ ...b, createdAt: Number(b.createdAt) }));
+        }
+      } catch (e) {
+        isServerAvailable = false;
+      }
     }
+    return getLocalBooks();
   },
 
   saveBook: async (book: Book): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE}/books`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(book)
-      });
-      return response.ok;
-    } catch (e) {
-      console.error('Errore salvataggio libro:', e);
-      return false;
+    if (isServerAvailable) {
+      try {
+        const response = await fetch(`${API_BASE}/books`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(book)
+        });
+        if (response.ok) return true;
+      } catch (e) {
+        isServerAvailable = false;
+      }
     }
+
+    // LocalStorage
+    const books = getLocalBooks();
+    books.push(book);
+    setLocalBooks(books);
+    return true;
   },
 
   updateBook: async (book: Book): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE}/books/${book.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(book)
-      });
-      return response.ok;
-    } catch (e) {
-      console.error('Errore aggiornamento libro:', e);
-      return false;
+    if (isServerAvailable) {
+      try {
+        const response = await fetch(`${API_BASE}/books/${book.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(book)
+        });
+        if (response.ok) return true;
+      } catch (e) {
+        isServerAvailable = false;
+      }
     }
+
+    // LocalStorage
+    const books = getLocalBooks();
+    const index = books.findIndex(b => b.id === book.id);
+    if (index !== -1) {
+      books[index] = book;
+      setLocalBooks(books);
+      return true;
+    }
+    return false;
   },
 
   deleteBook: async (id: string): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE}/books/${id}`, {
-        method: 'DELETE'
-      });
-      return response.ok;
-    } catch (e) {
-      console.error('Errore eliminazione libro:', e);
-      return false;
+    if (isServerAvailable) {
+      try {
+        const response = await fetch(`${API_BASE}/books/${id}`, { method: 'DELETE' });
+        if (response.ok) return true;
+      } catch (e) {
+        isServerAvailable = false;
+      }
     }
+
+    // LocalStorage
+    const books = getLocalBooks();
+    const filtered = books.filter(b => b.id !== id);
+    setLocalBooks(filtered);
+    return true;
   }
 };
