@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { BookStatus, Book } from '../types';
 
@@ -89,7 +88,7 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-serif">
               {editBook ? 'Modifica Libro' : 'Nuovo Volume'}
             </h2>
-            <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400">
+            <button onClick={onClose} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:rotate-90 transition-transform">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -121,12 +120,12 @@ const BookForm: React.FC<BookFormProps> = ({ userId, onAdd, onUpdate, onClose, e
               <textarea 
                 value={description} onChange={(e) => setDescription(e.target.value)} rows={4}
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                placeholder="Scrivi una breve descrizione del libro..."
+                placeholder="Inserisci una breve trama o i tuoi pensieri sul libro..."
               />
             </div>
 
             <div className="pt-4">
-              <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200">
+              <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-indigo-600 transition-colors">
                 Salva Volume
               </button>
             </div>
